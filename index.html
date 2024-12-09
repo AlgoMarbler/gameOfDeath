@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Conway's Game of Life</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        #topPanel {
+            display: flex;
+            justify-content: space-evenly;
+            align-items: center;
+            background-color: #f8f8f8;
+            padding: 10px;
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
+        }
+
+        #container {
+            display: flex;
+            flex: 1;
+        }
+
+        #rulesPanel, #examplesPanel {
+            width: 20%;
+            padding: 10px;
+            background: #f8f8f8;
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
+        }
+
+        #gamePanel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        canvas {
+            display: block;
+            border: 1px solid #000;
+            cursor: grab;
+        }
+
+        #status {
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div id="topPanel">
+        <div>
+            <label for="gridSize">Grid Size: </label>
+            <input type="range" id="gridSize" min="10" max="75" value="40">
+            <span id="gridSizeValue">40</span>
+        </div>
+        <div>
+            <label for="speed">Simulation Speed (ms): </label>
+            <input type="range" id="speed" min="50" max="1000" value="200" step="50">
+            <span id="speedValue">200</span> ms
+        </div>
+        <div>
+            <button id="startButton">Start</button>
+            <button id="stopButton">Stop</button>
+            <button id="randomButton">Randomize Grid</button>
+            <button id="clearButton">Clear Grid</button>
+            <button id="fillButton">Fill Grid</button>
+        </div>
+        <div id="status">Status: Paused</div>
+    </div>
+    <div id="container">
+        <div id="rulesPanel">
+            <h2>Rules</h2>
+            <p><strong>1. Any live cell:</strong> Stays alive with 2 or 3 neighbors.</p>
+            <p><strong>2. Any dead cell:</strong> Becomes alive with exactly 3 neighbors.</p>
+            <p><strong>3. Otherwise:</strong> It dies or remains dead.</p>
+        </div>
+        <div id="gamePanel">
+            <canvas id="gameCanvas"></canvas>
+        </div>
+        <div id="examplesPanel">
+            <h2>Leaderboard</h2>
+            <p><strong>1. </strong> Block, Beehive</p>
+            <p><strong>Oscillators:</strong> Blinker, Toad</p>
+            <p><strong>Spaceships:</strong> Glider, LWSS</p>
+        </div>
+    </div>
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const canvas = document.getElementById('gameCanvas');
+            const ctx = canvas.getContext('2d');
+            const gridSizeSlider = document.getElementById('gridSize');
+            const gridSizeValue = document.getElementById('gridSizeValue');
+            const startButton = document.getElementById('startButton');
+            const stopButton = document.getElementById('stopButton');
+            const randomButton = document.getElementById('randomButton');
+            const clearButton = document.getElementById('clearButton');
+            const fillButton = document.getElementById('fillButton');
+            const speedInput = document.getElementById('speed');
+            const speedValue = document.getElementById('speedValue');
+            const statusDisplay = document.getElementById('status');
+
+            let gridSize = parseInt(gridSizeSlider.value, 10);
+            let cellSize;
+            let grid;
+            let running = false;
+            let intervalId;
+            let speed = parseInt(speedInput.value, 10);
+            let isDrawing = false;
+
+            function calculateCellSize() {
+                const width = canvas.parentElement.offsetWidth - 40;
+                const height = canvas.parentElement.offsetHeight - 40;
+                cellSize = Math.min(width / gridSize, height / gridSize);
+                canvas.width = gridSize * cellSize;
+                canvas.height = gridSize * cellSize;
+            }
+
+            function createEmptyGrid(size) {
+                return Array.from({ length: size }, () => Array(size).fill(0));
+            }
+
+            function drawGrid() {
+                calculateCellSize();
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                for (let row = 0; row < gridSize; row++) {
+                    for (let col = 0; col < gridSize; col++) {
+                        ctx.fillStyle = grid[row][col] ? '#000' : '#fff';
+                        ctx.fillRect(col * cellSize, row * cellSize, cellSize, cellSize);
+                        ctx.strokeStyle = '#ccc';
+                        ctx.strokeRect(col * cellSize, row * cellSize, cellSize, cellSize);
+                    }
+                }
+            }
+
+            function nextGeneration(grid) {
+                const newGrid = createEmptyGrid(gridSize);
+                for (let row = 0; row < gridSize; row++) {
+                    for (let col = 0; col < gridSize; col++) {
+                        const alive = grid[row][col];
+                        const neighbors = countNeighbors(grid, row, col);
+                        newGrid[row][col] = (alive && neighbors === 2) || neighbors === 3 ? 1 : 0;
+                    }
+                }
+                return newGrid;
+            }
+
+            function countNeighbors(grid, x, y) {
+                let count = 0;
+                for (let i = -1; i <= 1; i++) {
+                    for (let j = -1; j <= 1; j++) {
+                        if (i === 0 && j === 0) continue;
+                        const row = (x + i + gridSize) % gridSize;
+                        const col = (y + j + gridSize) % gridSize;
+                        count += grid[row][col];
+                    }
+                }
+                return count;
+            }
+
+            function randomizeGrid() {
+                grid = grid.map(row => row.map(() => Math.random() > 0.8 ? 1 : 0));
+                drawGrid();
+            }
+
+            function clearGrid() {
+                grid = createEmptyGrid(gridSize);
+                drawGrid();
+            }
+
+            function fillGrid() {
+                grid = grid.map(row => row.map(() => 1));
+                drawGrid();
+            }
+
+            gridSizeSlider.addEventListener('change', () => {
+                gridSize = parseInt(gridSizeSlider.value, 10);
+                gridSizeValue.textContent = gridSize;
+                grid = createEmptyGrid(gridSize);
+                drawGrid();
+            });
+
+            canvas.addEventListener('mousedown', () => (isDrawing = true));
+            canvas.addEventListener('mouseup', () => (isDrawing = false));
+            canvas.addEventListener('mousemove', (e) => {
+                if (!isDrawing) return;
+                const rect = canvas.getBoundingClientRect();
+                const x = Math.floor((e.clientX - rect.left) / cellSize);
+                const y = Math.floor((e.clientY - rect.top) / cellSize);
+                grid[y][x] = 1;
+                drawGrid();
+            });
+
+            function startSimulation() {
+                if (!running) {
+                    running = true;
+                    statusDisplay.textContent = "Status: Running";
+                    intervalId = setInterval(() => {
+                        grid = nextGeneration(grid);
+                        drawGrid();
+                    }, speed);
+                }
+            }
+
+            function stopSimulation() {
+                running = false;
+                statusDisplay.textContent = "Status: Paused";
+                clearInterval(intervalId);
+            }
+
+            speedInput.addEventListener('input', () => {
+                speed = parseInt(speedInput.value, 10);
+                speedValue.textContent = speed;
+                if (running) {
+                    stopSimulation();
+                    startSimulation();
+                }
+            });
+
+            startButton.addEventListener('click', startSimulation);
+            stopButton.addEventListener('click', stopSimulation);
+            randomButton.addEventListener('click', randomizeGrid);
+            clearButton.addEventListener('click', clearGrid);
+            fillButton.addEventListener('click', fillGrid);
+
+            grid = createEmptyGrid(gridSize);
+            drawGrid();
+        });
+    </script>
+</body>
+</html>
