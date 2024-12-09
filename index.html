@@ -51,6 +51,45 @@
         #status {
             font-weight: bold;
         }
+        #examplesPanel {
+        width: 20%;
+        padding: 10px;
+        background: #f8f8f8;
+        box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
+        }
+
+        #examplesPanel h2 {
+            font-size: 1.5em;
+            margin-bottom: 20px;
+        }
+
+        #examplesPanel p {
+            font-size: 1em;
+            margin: 5px 0;
+        }
+
+        .first-place {
+            font-size: 1.8em;
+            color: #FFD700; /* Gold color for 1st place */
+            font-weight: bold;
+        }
+
+        .second-place {
+            font-size: 1.6em;
+            color: #C0C0C0; /* Silver color for 2nd place */
+            font-weight: bold;
+        }
+
+        .third-place {
+            font-size: 1.5em;
+            color: #CD7F32; /* Bronze color for 3rd place */
+            font-weight: bold;
+        }
+
+        /* For positions 4-10, normal size */
+        #examplesPanel p:not(.first-place):not(.second-place):not(.third-place) {
+            font-size: 1.2em;
+        }
     </style>
 </head>
 <body>
@@ -72,7 +111,7 @@
             <button id="clearButton">Clear Grid</button>
             <button id="fillButton">Fill Grid</button>
         </div>
-        <div id="status">Status: Paused. Drag to place tiles.</div>
+        <div id="status">Status: Paused. Drag to place tiles. Score: 0</div>
     </div>
     <div id="container">
         <div id="rulesPanel">
@@ -86,10 +125,17 @@
         </div>
         <div id="examplesPanel">
             <h2>Leaderboard</h2>
-            <p><strong>1. </strong> Block, Beehive</p>
-            <p><strong>Oscillators:</strong> Blinker, Toad</p>
-            <p><strong>Spaceships:</strong> Glider, LWSS</p>
-        </div>
+            <p class="first-place"><h3> 1. Z Arcade (1,081,022,576)</h3></p>
+            <p class="second-place"><h4><strong>2. </strong> NUM LOCK (829,804,211)</h4></p>
+            <p class="third-place"><h4><strong>3. </strong> Alterr.Native (696,802,978)</h4></p>
+            <h5><p><strong>4. </strong> NewBox (589,223,455)</p>
+            <p><strong>5. </strong> The Black Cat Gear (512,123,780)</p>
+            <p><strong>6. </strong> Potato2017 (498,232,113)</p>
+            <p><strong>7. </strong> Lost Marbles (452,345,167)</p>
+            <p><strong>8. </strong> BYTE (430,278,904)</p>
+            <p><strong>9. </strong> NeonCoder (412,890,304)</p>
+            <p><strong>10. </strong> RAIDEN (388,789,215)</p></h5>
+        </div>    
     </div>
     <script>
         document.addEventListener("DOMContentLoaded", () => {
@@ -113,6 +159,7 @@
             let intervalId;
             let speed = parseInt(speedInput.value, 10);
             let isDrawing = false;
+            let score = 0;
 
             function calculateCellSize() {
                 const width = canvas.parentElement.offsetWidth - 40;
@@ -179,6 +226,12 @@
                 drawGrid();
             }
 
+            function updateScore() {
+                // Count the number of live cells
+                score += grid.flat().filter(cell => cell === 1).length;
+                statusDisplay.textContent = `Status: Running. Score: ${score}`;
+            }
+
             gridSizeSlider.addEventListener('change', () => {
                 gridSize = parseInt(gridSizeSlider.value, 10);
                 gridSizeValue.textContent = gridSize;
@@ -200,9 +253,10 @@
             function startSimulation() {
                 if (!running) {
                     running = true;
-                    statusDisplay.textContent = "Status: Running";
+                    statusDisplay.textContent = `Status: Running. Score: ${score}`;
                     intervalId = setInterval(() => {
                         grid = nextGeneration(grid);
+                        updateScore();
                         drawGrid();
                     }, speed);
                 }
@@ -210,7 +264,7 @@
 
             function stopSimulation() {
                 running = false;
-                statusDisplay.textContent = "Status: Paused";
+                statusDisplay.textContent = `Status: Paused. Score: ${score}`;
                 clearInterval(intervalId);
             }
 
