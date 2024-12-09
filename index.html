@@ -110,6 +110,7 @@
             <button id="randomButton">Randomize Grid</button>
             <button id="clearButton">Clear Grid</button>
             <button id="fillButton">Fill Grid</button>
+            <button id="resetButton">Wipe Score</button>
         </div>
         <div id="status">Status: Paused. Drag to place tiles. Score: 0</div>
     </div>
@@ -226,6 +227,10 @@
                 drawGrid();
             }
 
+            function clearScore() {
+                score = -50000;
+            }
+
             function updateScore() {
                 // Count the number of live cells
                 score += grid.flat().filter(cell => cell === 1).length;
@@ -282,6 +287,7 @@
             randomButton.addEventListener('click', randomizeGrid);
             clearButton.addEventListener('click', clearGrid);
             fillButton.addEventListener('click', fillGrid);
+            resetButton.addEventListener('click', clearScore);
 
             grid = createEmptyGrid(gridSize);
             drawGrid();
